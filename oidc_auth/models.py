@@ -1,13 +1,17 @@
+from logging import Logger
 import string
 import random
+import base64
 import json
-from urlparse import urljoin
+
+from urllib.parse import urljoin
+
+
 import requests
+import jwt
+
 from django.db import models, IntegrityError
 from django.conf import settings
-from jwkest.jwk import load_jwks_from_url
-from jwkest.jws import JWS
-from jwkest.jwk import SYMKey
 
 from . import errors
 from .settings import oidc_settings
@@ -31,7 +35,7 @@ class Nonce(models.Model):
         """This method generates and returns a nonce, an unique generated
         string. If the maximum of retries is exceeded, it returns None.
         """
-        CHARS = string.letters + string.digits
+        CHARS = string.ascii_letters + string.digits
 
         for i in range(5):
             _hash = ''.join(random.choice(CHARS) for n in range(length))
@@ -125,13 +129,32 @@ class OpenIDProvider(models.Model):
     def client_credentials(self):
         return self.client_id, self.client_secret
 
+    # TEM QUE DAR UM JEITO DE RETORNAR AS CHAVES CERTAS PARA O DECODE.
     @property
     def signing_keys(self):
         if self.signing_alg == self.RS256:
             # TODO perform caching, OBVIOUS
-            return load_jwks_from_url(self.jwks_uri)
+            request = requests.get(self.jwks_uri, allow_redirects=True, verify=True)
+            keys = []
+            if request.status_code == 200:
+                jwk = json.loads(request.text)
+                for kspec in jwk['keys']:
+                    try:
+                        _key = kspec
+                    except Exception as err:
+                        Logger.warning(err)
+                    else:
+                        keys.append(_key)
+            else:
+                raise Exception("HTTP Get error: %s" % request.status_code)
 
-        return [SYMKey(key=str(self.client_secret))]
+        elif self.signing_alg == self.HS256:
+            keys = str(self.client_secret)
+
+        return keys
+
+    def load_key():
+        pass
 
     def verify_id_token(self, token):
         log.debug('Verifying token %s' % token)
@@ -145,9 +168,9 @@ class OpenIDProvider(models.Model):
         if header['alg'] not in ['HS256', 'RS256']:
             raise errors.UnsuppportedSigningMethod(header['alg'], ['HS256', 'RS256'])
 
-        id_token = JWS().verify_compact(token, self.signing_keys)
+        id_token = verify_compact(token, self.signing_keys)
         log.debug('Token verified, %s' % id_token)
-        return json.loads(id_token)
+        return id_token
 
     @staticmethod
     def _get_issuer(token):
@@ -165,6 +188,11 @@ class OpenIDProvider(models.Model):
 
         return b64decode(claims)['iss']
 
+
+def verify_compact(token, keys):
+    payload = jwt.decode(token, keys, algorithms=['RS256', 'HS256'], options={"verify_signature": False})
+
+    return payload
 
 def get_default_provider():
     args = oidc_settings.DEFAULT_PROVIDER
