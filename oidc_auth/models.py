@@ -224,9 +224,9 @@ def get_default_provider():
 
 class OpenIDUser(models.Model):
     sub = models.CharField(max_length=255, unique=True)
-    issuer = models.ForeignKey(OpenIDProvider)
+    issuer = models.ForeignKey(OpenIDProvider, on_delete=models.CASCADE)
     user = models.OneToOneField(getattr(settings, 'AUTH_USER_MODEL', 'auth.User'),
-            related_name='oidc_account')
+            related_name='oidc_account', on_delete=models.CASCADE)
 
     access_token = models.CharField(max_length=255)
     refresh_token = models.CharField(max_length=255)

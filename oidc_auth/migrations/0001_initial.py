@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import django.db.models.deletion
+
 from django.db import models, migrations
 from django.conf import settings
 
@@ -42,8 +44,8 @@ class Migration(migrations.Migration):
                 ('sub', models.CharField(unique=True, max_length=255)),
                 ('access_token', models.CharField(max_length=255)),
                 ('refresh_token', models.CharField(max_length=255)),
-                ('issuer', models.ForeignKey(to='oidc_auth.OpenIDProvider')),
-                ('user', models.OneToOneField(related_name='oidc_account', to=settings.AUTH_USER_MODEL)),
+                ('issuer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='oidc_auth.OpenIDProvider')),
+                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='oidc_account', to=settings.AUTH_USER_MODEL)),
             ],
         ),
     ]
