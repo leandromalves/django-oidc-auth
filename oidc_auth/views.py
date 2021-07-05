@@ -44,13 +44,12 @@ def _redirect(request, login_complete_view, form_class, redirect_field_name):
     params = urlencode({
         'response_type': 'code',
         'scope': utils.scopes(),
-        # 'redirect_uri': request.build_absolute_uri(reverse(login_complete_view)),
         'client_id': provider.client_id,
         'state': nonce.state
     })
-    redirect_url = '%s?%s' % (provider.authorization_endpoint, params)
+    redirect_url = f'{provider.authorization_endpoint}?{params}'
 
-    log.debug('Redirecting to %s' % redirect_url)
+    log.debug(f'Redirecting to {redirect_url}')
     return redirect(redirect_url)
 
 

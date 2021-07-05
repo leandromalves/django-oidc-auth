@@ -14,10 +14,9 @@ class OpenIDConnectBackend(object):
         except UserModel.DoesNotExist:
             return None
 
-    def authenticate(self, **kwargs):
+    def authenticate(self, request, credentials=None):
         try:
-            credentials = kwargs.get('credentials')
-            if not credentials:
+            if credentials is None:
                 return None
 
             provider = credentials['provider']

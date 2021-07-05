@@ -71,6 +71,10 @@ class OpenIDProvider(models.Model):
         (RS256, 'RS256'),
         (HS256, 'HS256'),
     )
+    SUPPORTED_ALGORITHMS = [
+        RS256,
+        HS256,
+    ]
 
     issuer = models.URLField(unique=True)
     authorization_endpoint = models.URLField()
@@ -149,7 +153,7 @@ class OpenIDProvider(models.Model):
                 raise Exception("HTTP Get error: %s" % request.status_code)
 
         elif self.signing_alg == self.HS256:
-            keys = str(self.client_secret)
+            keys = self.client_secret
 
         return keys
 
@@ -158,18 +162,17 @@ class OpenIDProvider(models.Model):
 
     def verify_id_token(self, token):
         log.debug('Verifying token %s' % token)
-        header, claims, signature = token.split('.')
+        header, _, signature = token.split('.')
         header = b64decode(header)
-        claims = b64decode(claims)
 
         if not signature:
             raise errors.InvalidIdToken()
 
-        if header['alg'] not in ['HS256', 'RS256']:
-            raise errors.UnsuppportedSigningMethod(header['alg'], ['HS256', 'RS256'])
+        if header['alg'] not in self.SUPPORTED_ALGORITHMS:
+            raise errors.UnsuppportedSigningMethod(header['alg'], self.SUPPORTED_ALGORITHMS)
 
         id_token = verify_compact(token, self.signing_keys)
-        log.debug('Token verified, %s' % id_token)
+        log.debug(f'Token verified, {id_token}')
         return id_token
 
     @staticmethod
@@ -246,21 +249,20 @@ class OpenIDUser(models.Model):
             oidc_acc.refresh_token = refresh_token
             oidc_acc.save()
 
-            log.debug('OpenIDUser found, sub %s' % oidc_acc.sub)
+            log.debug(f'OpenIDUser found, sub {oidc_acc.sub}')
             return oidc_acc
         except cls.DoesNotExist:
-            log.debug("OpenIDUser for sub %s not found, so it'll be created" % id_token['sub'])
+            log.debug(f"OpenIDUser for sub {id_token['sub']} not found, so it'll be created")
 
         # Find an existing User locally or create a new one
         try:
             user = UserModel.objects.get(username__iexact=id_token['sub'])
-            log.debug('Found user with username %s locally' % id_token['sub'])
+            log.debug(f"Found user with username {id_token['sub']} locally")
         except UserModel.MultipleObjectsReturned:
             user = UserModel.objects.filter(username__iexact=id_token['sub'])[0]
-            log.warn('Multiple users found with username %s! First match will be selected' % id_token['sub'])
+            log.warn(f"Multiple users found with username {id_token['sub']}! First match will be selected")
         except UserModel.DoesNotExist:
-            log.debug('User with username %s not found locally, '
-                      'so it will be created' % id_token['sub'])
+            log.debug(f"User with username {id_token['sub']} not found locally, so it will be created")
 
             user = UserModel()
 
@@ -282,7 +284,7 @@ class OpenIDUser(models.Model):
         try:
             oidc_acc = cls.objects.get(user=user)
 
-            oidc_acc.sub= id_token['sub']
+            oidc_acc.sub = id_token['sub']
             oidc_acc.access_token = access_token
             oidc_acc.refresh_token = refresh_token
             oidc_acc.save()
