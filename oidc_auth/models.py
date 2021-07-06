@@ -171,7 +171,7 @@ class OpenIDProvider(models.Model):
         if header['alg'] not in self.SUPPORTED_ALGORITHMS:
             raise errors.UnsuppportedSigningMethod(header['alg'], self.SUPPORTED_ALGORITHMS)
 
-        id_token = verify_compact(token, self.signing_keys)
+        id_token = verify_compact(token, self.signing_keys, self.client_id)
         log.debug(f'Token verified, {id_token}')
         return id_token
 
@@ -192,10 +192,11 @@ class OpenIDProvider(models.Model):
         return b64decode(claims)['iss']
 
 
-def verify_compact(token, keys):
-    payload = jwt.decode(token, keys, algorithms=['RS256', 'HS256'], options={"verify_signature": False})
+def verify_compact(token, keys, audience):
+    payload = jwt.decode(token, keys, algorithms=['RS256', 'HS256'], audience=audience)
 
     return payload
+
 
 def get_default_provider():
     args = oidc_settings.DEFAULT_PROVIDER
