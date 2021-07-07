@@ -171,7 +171,7 @@ class OpenIDProvider(models.Model):
         if header['alg'] not in self.SUPPORTED_ALGORITHMS:
             raise errors.UnsuppportedSigningMethod(header['alg'], self.SUPPORTED_ALGORITHMS)
 
-        id_token = verify_compact(token, self.signing_keys, self.client_id)
+        id_token = verify_compact(token, self.signing_keys, None)
         log.debug(f'Token verified, {id_token}')
         return id_token
 
@@ -193,7 +193,9 @@ class OpenIDProvider(models.Model):
 
 
 def verify_compact(token, keys, audience):
-    payload = jwt.decode(token, keys, algorithms=['RS256', 'HS256'], audience=audience)
+    #TODO ajustar pocoweb para possibilitar o uso do audience
+    # JIRA: https://intelie.atlassian.net/browse/PW-1330
+    payload = jwt.decode(token, keys, algorithms=['RS256', 'HS256'], audience=audience, options={'verify_aud': False})
 
     return payload
 
