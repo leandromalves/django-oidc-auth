@@ -116,12 +116,23 @@ class TestTokenExchangePhase(OIDCTestCase):
         session.save()
 
         with mock.patch.object(OpenIDProvider, 'verify_id_token') as mock_verify_id_token:
-            mock_verify_id_token.return_value = { 'sub': 'foobar' }
+            with mock.patch('requests.get') as get_mock:
+                response = mock.MagicMock()
+                response.status_code = 200
+                response.json.return_value = {
+                    'sub': 'foobar',
+                    'given_name': 'teste',
+                    'family_name': 'teste',
+                    'preferred_username': 'test',
+                    'email': 'test_email',
+                }
+                get_mock.return_value = response
+                mock_verify_id_token.return_value = { 'sub': 'foobar' }
 
-            response = self.client.get('/oidc/complete/', data={
-                'state': state,
-                'code': '12345'
-            })
+                response = self.client.get('/oidc/complete/', data={
+                    'state': state,
+                    'code': '12345'
+                })
 
         post_mock.assert_called_with(provider.token_endpoint, params={
             'grant_type': 'authorization_code',
@@ -170,12 +181,23 @@ class TestTokenExchangePhase(OIDCTestCase):
             user = UserModel.objects.create(username='foobar')
 
             with mock.patch.object(OpenIDProvider, 'verify_id_token') as mock_verify_id_token:
-                mock_verify_id_token.return_value = { 'sub': 'foobar' }
+                with mock.patch('requests.get') as get_mock:
+                    response = mock.MagicMock()
+                    response.status_code = 200
+                    response.json.return_value = {
+                       'sub': 'foobar',
+                       'given_name': 'teste',
+                       'family_name': 'teste',
+                       'preferred_username': 'test',
+                       'email': 'test_email',
+                    }
+                    get_mock.return_value = response
+                    mock_verify_id_token.return_value = { 'sub': 'foobar' }
 
-                response = self.client.get('/oidc/complete/', data={
-                    'state': state,
-                    'code': '12345'
-                })
+                    response = self.client.get('/oidc/complete/', data={
+                        'state': state,
+                        'code': '12345'
+                    })
 
             post_mock.assert_called_with(provider.token_endpoint, params={
                 'grant_type': 'authorization_code',
