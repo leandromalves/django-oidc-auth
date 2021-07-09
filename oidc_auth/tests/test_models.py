@@ -1,4 +1,4 @@
-from urlparse import urljoin
+from urllib.parse import urljoin
 import mock
 from nose import tools
 
@@ -110,6 +110,7 @@ class TestOpenIDUser(OIDCTestCase):
                 id_token={'sub': 'admin'},
                 access_token='foo',
                 refresh_token='bar',
+                expires_in=36000,
                 provider=provider
             )
 
@@ -135,6 +136,7 @@ class TestOpenIDUser(OIDCTestCase):
                 id_token={'sub': 'admin'},
                 access_token='foo',
                 refresh_token='bar',
+                expires_in=36000,
                 provider=provider
             )
 
@@ -159,6 +161,7 @@ class TestOpenIDUser(OIDCTestCase):
                 id_token={'sub': 'admin'},
                 access_token='foo',
                 refresh_token='bar',
+                expires_in=36000,
                 provider=provider
             )
 

@@ -1,22 +1,22 @@
-from logging import Logger
 import string
 import random
-import base64
 import json
-
-from urllib.parse import urljoin
-
-
+import logging
 import requests
 import jwt
 
+from urllib.parse import urljoin
+from datetime import datetime
+
 from django.db import models, IntegrityError
 from django.conf import settings
+from django.utils import timezone
 
 from . import errors
 from .settings import oidc_settings
 from .utils import log, b64decode, get_user_model
 
+logger = logging.getLogger(__name__)
 
 class Nonce(models.Model):
     issuer_url = models.URLField()
@@ -138,19 +138,19 @@ class OpenIDProvider(models.Model):
     def signing_keys(self):
         if self.signing_alg == self.RS256:
             # TODO perform caching, OBVIOUS
-            request = requests.get(self.jwks_uri, allow_redirects=True, verify=True)
+            response = requests.get(self.jwks_uri, allow_redirects=True, verify=True)
             keys = []
-            if request.status_code == 200:
-                jwk = json.loads(request.text)
+            if response.status_code == 200:
+                jwk = json.loads(response.text)
                 for kspec in jwk['keys']:
                     try:
                         _key = kspec
                     except Exception as err:
-                        Logger.warning(err)
+                        logger.warning(err)
                     else:
                         keys.append(_key)
             else:
-                raise Exception("HTTP Get error: %s" % request.status_code)
+                raise Exception("HTTP Get error: %s" % response.status_code)
 
         elif self.signing_alg == self.HS256:
             keys = self.client_secret
@@ -236,12 +236,16 @@ class OpenIDUser(models.Model):
 
     access_token = models.CharField(max_length=255)
     refresh_token = models.CharField(max_length=255)
+    token_expires_at = models.DateTimeField(null=True, blank=True)
 
     def __unicode__(self):
         return '%s: %s' % (self.sub, self.user)
 
+    def access_token_expired(self):
+        return datetime.timestamp(timezone.now()) - self.token_expires_at > 0
+
     @classmethod
-    def get_or_create(cls, id_token, access_token, refresh_token, provider):
+    def get_or_create(cls, id_token, access_token, refresh_token, expires_in, provider):
         UserModel = get_user_model()
 
         try:
@@ -250,6 +254,7 @@ class OpenIDUser(models.Model):
             # Updating with new tokens
             oidc_acc.access_token = access_token
             oidc_acc.refresh_token = refresh_token
+            oidc_acc.token_expires_at = timezone.now() + expires_in
             oidc_acc.save()
 
             log.debug(f'OpenIDUser found, sub {oidc_acc.sub}')
@@ -290,6 +295,7 @@ class OpenIDUser(models.Model):
             oidc_acc.sub = id_token['sub']
             oidc_acc.access_token = access_token
             oidc_acc.refresh_token = refresh_token
+            oidc_acc.token_expires_at = timezone.now() + expires_in
             oidc_acc.save()
 
             log.debug('OpenIDUser found, sub %s' % oidc_acc.sub)
@@ -322,3 +328,31 @@ class OpenIDUser(models.Model):
             name, claims['preferred_username'], claims['email']))
 
         return claims
+
+    def refresh_access_token(self, provider_token_url, client_id, client_secret):
+        refresh_token = self.refresh_token
+
+        post_data = {
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token,
+            'client_id': client_id,
+            'client_secret': client_secret,
+        }
+
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": ("application/x-www-form-urlencoded;charset=UTF-8"),
+        }
+
+        response = requests.post(provider_token_url, headers=headers, data=post_data)
+
+        access_token = None
+        if response.status_code == '200':
+            tokens = response.json()
+            self.access_token = tokens["access_token"]
+            self.refresh_token = tokens["refresh_token"]
+            self.save()
+
+            access_token = tokens["access_token"]
+
+        return access_token

@@ -1,7 +1,7 @@
-from urlparse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.utils.importlib import import_module
+from importlib import import_module
 from django.test import Client
 from nose import tools
 import mock

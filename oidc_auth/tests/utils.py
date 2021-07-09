@@ -1,4 +1,4 @@
-from urlparse import urljoin
+from urllib.parse import urljoin
 import mock
 from nose import tools
 from django.test import TransactionTestCase

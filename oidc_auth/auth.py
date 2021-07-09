@@ -25,6 +25,7 @@ class OpenIDConnectBackend(object):
             oidc_user = OpenIDUser.get_or_create(id_token,
                     credentials['access_token'],
                     credentials.get('refresh_token', ''),
+                    credentials.get('expires_in', ''),
                     provider)
 
             return oidc_user.user
