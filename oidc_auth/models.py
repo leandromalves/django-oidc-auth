@@ -353,6 +353,7 @@ class OpenIDUser(models.Model):
             tokens = response.json()
             self.access_token = tokens["access_token"]
             self.refresh_token = tokens["refresh_token"]
+            self.token_expires_at = timezone.now() + timedelta(seconds=tokens["expires_in"])
             self.save()
 
             access_token = tokens["access_token"]
