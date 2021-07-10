@@ -125,3 +125,5 @@ OIDC_AUTH = {
 oidc_auth_log = logging.getLogger('oidc_auth')
 oidc_auth_log.setLevel(logging.DEBUG)
 # oidc_auth_log.addHandler(logging.StreamHandler())
+
+USE_TZ = True

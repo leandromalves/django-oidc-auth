@@ -6,7 +6,7 @@ import requests
 import jwt
 
 from urllib.parse import urljoin
-from datetime import datetime
+from datetime import timedelta
 
 from django.db import models, IntegrityError
 from django.conf import settings
@@ -242,11 +242,12 @@ class OpenIDUser(models.Model):
         return '%s: %s' % (self.sub, self.user)
 
     def access_token_expired(self):
-        return datetime.timestamp(timezone.now()) - self.token_expires_at > 0
+        return timezone.now() > self.token_expires_at
 
     @classmethod
     def get_or_create(cls, id_token, access_token, refresh_token, expires_in, provider):
         UserModel = get_user_model()
+        token_expires_at = timezone.now() + timedelta(seconds=expires_in)
 
         try:
             oidc_acc = cls.objects.get(sub=id_token['sub'])
@@ -254,7 +255,7 @@ class OpenIDUser(models.Model):
             # Updating with new tokens
             oidc_acc.access_token = access_token
             oidc_acc.refresh_token = refresh_token
-            oidc_acc.token_expires_at = timezone.now() + expires_in
+            oidc_acc.token_expires_at = token_expires_at
             oidc_acc.save()
 
             log.debug(f'OpenIDUser found, sub {oidc_acc.sub}')
@@ -295,7 +296,7 @@ class OpenIDUser(models.Model):
             oidc_acc.sub = id_token['sub']
             oidc_acc.access_token = access_token
             oidc_acc.refresh_token = refresh_token
-            oidc_acc.token_expires_at = timezone.now() + expires_in
+            oidc_acc.token_expires_at = token_expires_at
             oidc_acc.save()
 
             log.debug('OpenIDUser found, sub %s' % oidc_acc.sub)
@@ -304,7 +305,8 @@ class OpenIDUser(models.Model):
             log.debug("OpenIDUser for sub %s not found, so it'll be created" % id_token['sub'])
 
         return cls.objects.create(sub=id_token['sub'], issuer=provider,
-                user=user, access_token=access_token, refresh_token=refresh_token)
+                user=user, access_token=access_token, refresh_token=refresh_token,
+                token_expires_at=token_expires_at)
 
     @classmethod
     def _get_userinfo(cls, provider, sub, access_token, refresh_token):
