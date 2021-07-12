@@ -242,4 +242,25 @@ class TestOpenIDUser(OIDCTestCase):
 
             return_value = oidc_user.access_token_expired()
 
-        self.assertFalse(return_value)
+        self.assertTrue(return_value)
+    
+    def test_access_token_expired_without_token_expires_at_returns_true(self):
+        with mock.patch('requests.get') as get_mock:
+            get_mock.return_value = self.response_mock
+            provider = OpenIDProvider.discover(issuer=self.issuer)
+        user = User.objects.create(username='test user', password='password')
+        oidc_user = OpenIDUser.objects.create(
+            sub='test sub',
+            issuer=provider,
+            user=user,
+            access_token='test access_token',
+            refresh_token='test refresh_token',
+            token_expires_at=None,
+        )
+
+        with mock.patch('oidc_auth.models.timezone.now') as mock_now:
+            mock_now.return_value = self.now
+
+            return_value = oidc_user.access_token_expired()
+
+        self.assertTrue(return_value)

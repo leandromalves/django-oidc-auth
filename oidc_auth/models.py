@@ -242,7 +242,10 @@ class OpenIDUser(models.Model):
         return '%s: %s' % (self.sub, self.user)
 
     def access_token_expired(self):
-        return timezone.now() > self.token_expires_at
+        if self.token_expires_at is None:
+            return True
+
+        return timezone.now() >= self.token_expires_at
 
     @classmethod
     def get_or_create(cls, id_token, access_token, refresh_token, expires_in, provider):
