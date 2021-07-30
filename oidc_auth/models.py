@@ -133,7 +133,6 @@ class OpenIDProvider(models.Model):
     def client_credentials(self):
         return self.client_id, self.client_secret
 
-    # TEM QUE DAR UM JEITO DE RETORNAR AS CHAVES CERTAS PARA O DECODE.
     @property
     def signing_keys(self):
         if self.signing_alg == self.RS256:
