@@ -348,7 +348,7 @@ class OpenIDUser(models.Model):
             "Content-Type": ("application/x-www-form-urlencoded;charset=UTF-8"),
         }
 
-        response = requests.post(provider_token_url, headers=headers, data=post_data)
+        response = requests.post(provider_token_url, headers=headers, data=post_data, verify=False)
 
         access_token = None
         if response.status_code == '200':
