@@ -1,8 +1,8 @@
-from urllib import urlencode
+from urllib.parse import urlencode
 from django.conf import settings
 from django.http import HttpResponseBadRequest
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login as django_login
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.shortcuts import render, redirect
 import requests
 
@@ -44,13 +44,12 @@ def _redirect(request, login_complete_view, form_class, redirect_field_name):
     params = urlencode({
         'response_type': 'code',
         'scope': utils.scopes(),
-        # 'redirect_uri': request.build_absolute_uri(reverse(login_complete_view)),
         'client_id': provider.client_id,
         'state': nonce.state
     })
-    redirect_url = '%s?%s' % (provider.authorization_endpoint, params)
+    redirect_url = f'{provider.authorization_endpoint}?{params}'
 
-    log.debug('Redirecting to %s' % redirect_url)
+    log.debug(f'Redirecting to {redirect_url}')
     return redirect(redirect_url)
 
 

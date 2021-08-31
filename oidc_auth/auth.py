@@ -14,10 +14,9 @@ class OpenIDConnectBackend(object):
         except UserModel.DoesNotExist:
             return None
 
-    def authenticate(self, **kwargs):
+    def authenticate(self, request, credentials=None):
         try:
-            credentials = kwargs.get('credentials')
-            if not credentials:
+            if credentials is None:
                 return None
 
             provider = credentials['provider']
@@ -26,6 +25,7 @@ class OpenIDConnectBackend(object):
             oidc_user = OpenIDUser.get_or_create(id_token,
                     credentials['access_token'],
                     credentials.get('refresh_token', ''),
+                    credentials.get('expires_in', ''),
                     provider)
 
             return oidc_user.user

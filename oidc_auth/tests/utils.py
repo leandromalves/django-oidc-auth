@@ -1,4 +1,4 @@
-from urlparse import urljoin
+from urllib.parse import urljoin
 import mock
 from nose import tools
 from django.test import TransactionTestCase
@@ -32,9 +32,9 @@ class OIDCTestCase(TransactionTestCase):
         if not credentials:
             credentials = self.configs
 
-        tools.assert_is_instance(provider, OpenIDProvider)
-        tools.assert_equal(provider.issuer, credentials['issuer'])
-        tools.assert_equal(provider.authorization_endpoint, credentials['authorization_endpoint'])
-        tools.assert_equal(provider.token_endpoint, credentials['token_endpoint'])
-        tools.assert_equal(provider.userinfo_endpoint, credentials['userinfo_endpoint'])
-        tools.assert_equal(provider.jwks_uri, credentials['jwks_uri'])
+        self.assertIsInstance(provider, OpenIDProvider)
+        self.assertEqual(provider.issuer, credentials['issuer'])
+        self.assertEqual(provider.authorization_endpoint, credentials['authorization_endpoint'])
+        self.assertEqual(provider.token_endpoint, credentials['token_endpoint'])
+        self.assertEqual(provider.userinfo_endpoint, credentials['userinfo_endpoint'])
+        self.assertEqual(provider.jwks_uri, credentials['jwks_uri'])

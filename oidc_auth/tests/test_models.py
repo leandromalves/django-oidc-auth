@@ -1,11 +1,15 @@
-from urlparse import urljoin
+import pytz
 import mock
+
+from datetime import datetime, timedelta
+from urllib.parse import urljoin
+
+from django.contrib.auth.models import User
 from nose import tools
 
-from .utils import OIDCTestCase
-from django.contrib.auth.models import User
 from oidc_auth.models import OpenIDProvider, get_default_provider, OpenIDUser
 from oidc_auth.settings import oidc_settings
+from .utils import OIDCTestCase
 
 
 class TestOpenIDPRovider(OIDCTestCase):
@@ -91,6 +95,11 @@ class TestOpenIDPRovider(OIDCTestCase):
 
 
 class TestOpenIDUser(OIDCTestCase):
+    def setUp(self):
+        super().setUp()
+        now_string = '2021-07-09 23:43:36.499313+00:00'
+        self.now = datetime.fromisoformat(now_string)
+
     @mock.patch('requests.get')
     def test_create_new_superuser(self, get_mock):
         get_mock.return_value = self.response_mock
@@ -110,6 +119,7 @@ class TestOpenIDUser(OIDCTestCase):
                 id_token={'sub': 'admin'},
                 access_token='foo',
                 refresh_token='bar',
+                expires_in=36000,
                 provider=provider
             )
 
@@ -135,6 +145,7 @@ class TestOpenIDUser(OIDCTestCase):
                 id_token={'sub': 'admin'},
                 access_token='foo',
                 refresh_token='bar',
+                expires_in=36000,
                 provider=provider
             )
 
@@ -159,9 +170,97 @@ class TestOpenIDUser(OIDCTestCase):
                 id_token={'sub': 'admin'},
                 access_token='foo',
                 refresh_token='bar',
+                expires_in=36000,
                 provider=provider
             )
 
         user = User.objects.get(username='admin')
         self.assertFalse(user.is_superuser)
         self.assertFalse(user.is_staff)
+
+    def test_access_token_expired_with_token_expires_at_lt_now_returns_true(self):
+        with mock.patch('requests.get') as get_mock:
+            get_mock.return_value = self.response_mock
+            provider = OpenIDProvider.discover(issuer=self.issuer)
+        user = User.objects.create(username='test user', password='password')
+        now_minus_10_minutes = self.now - timedelta(minutes=10)
+        oidc_user = OpenIDUser.objects.create(
+            sub='test sub',
+            issuer=provider,
+            user=user,
+            access_token='test access_token',
+            refresh_token='test refresh_token',
+            token_expires_at=now_minus_10_minutes,
+        )
+
+        with mock.patch('oidc_auth.models.timezone.now') as mock_now:
+            mock_now.return_value = self.now
+
+            return_value = oidc_user.access_token_expired()
+
+        self.assertTrue(return_value)
+
+    def test_access_token_expired_with_token_expires_at_gt_now_returns_false(self):
+        with mock.patch('requests.get') as get_mock:
+            get_mock.return_value = self.response_mock
+            provider = OpenIDProvider.discover(issuer=self.issuer)
+        user = User.objects.create(username='test user', password='password')
+        
+        now_plus_10_minutes = self.now + timedelta(minutes=10)
+        oidc_user = OpenIDUser.objects.create(
+            sub='test sub',
+            issuer=provider,
+            user=user,
+            access_token='test access_token',
+            refresh_token='test refresh_token',
+            token_expires_at=now_plus_10_minutes,
+        )
+
+        with mock.patch('oidc_auth.models.timezone.now') as mock_now:
+            mock_now.return_value = self.now
+
+            return_value = oidc_user.access_token_expired()
+
+        self.assertFalse(return_value)
+
+    def test_access_token_expired_with_token_expires_at_eq_now_returns_true(self):
+        with mock.patch('requests.get') as get_mock:
+            get_mock.return_value = self.response_mock
+            provider = OpenIDProvider.discover(issuer=self.issuer)
+        user = User.objects.create(username='test user', password='password')
+        oidc_user = OpenIDUser.objects.create(
+            sub='test sub',
+            issuer=provider,
+            user=user,
+            access_token='test access_token',
+            refresh_token='test refresh_token',
+            token_expires_at=self.now,
+        )
+
+        with mock.patch('oidc_auth.models.timezone.now') as mock_now:
+            mock_now.return_value = self.now
+
+            return_value = oidc_user.access_token_expired()
+
+        self.assertTrue(return_value)
+    
+    def test_access_token_expired_without_token_expires_at_returns_true(self):
+        with mock.patch('requests.get') as get_mock:
+            get_mock.return_value = self.response_mock
+            provider = OpenIDProvider.discover(issuer=self.issuer)
+        user = User.objects.create(username='test user', password='password')
+        oidc_user = OpenIDUser.objects.create(
+            sub='test sub',
+            issuer=provider,
+            user=user,
+            access_token='test access_token',
+            refresh_token='test refresh_token',
+            token_expires_at=None,
+        )
+
+        with mock.patch('oidc_auth.models.timezone.now') as mock_now:
+            mock_now.return_value = self.now
+
+            return_value = oidc_user.access_token_expired()
+
+        self.assertTrue(return_value)
