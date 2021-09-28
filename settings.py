@@ -127,3 +127,5 @@ oidc_auth_log.setLevel(logging.DEBUG)
 # oidc_auth_log.addHandler(logging.StreamHandler())
 
 USE_TZ = True
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
