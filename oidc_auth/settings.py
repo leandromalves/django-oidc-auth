@@ -44,3 +44,5 @@ class OIDCSettings(object):
 
 
 oidc_settings = OIDCSettings(USER_SETTINGS, DEFAULTS)
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
