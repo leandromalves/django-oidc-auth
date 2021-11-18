@@ -1,7 +1,7 @@
-from django.conf.urls import url
+from django.urls import re_path
 from .views import login_begin, login_complete
 
 urlpatterns = [
-    url(r'^login/$', login_begin, name='oidc-login'),
-    url(r'^complete/$', login_complete, name='oidc-complete'),
+    re_path(r'^login/$', login_begin, name='oidc-login'),
+    re_path(r'^complete/$', login_complete, name='oidc-complete'),
 ]
