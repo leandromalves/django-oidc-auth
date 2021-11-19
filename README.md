@@ -36,7 +36,7 @@ Finally, add this to your *urls.py*:
 
     urlpatterns = patterns('your.views',
         # ...
-        url(r'oidc/', include('oidc_auth.urls')),
+        re_path(r'oidc/', include('oidc_auth.urls')),
     )
 
 Run `python manage.py migrate` and you're ready (*kinda*).
