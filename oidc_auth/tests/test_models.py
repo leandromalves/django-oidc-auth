@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
 from django.contrib.auth.models import User
-from nose import tools
 
 from oidc_auth.models import OpenIDProvider, get_default_provider, OpenIDUser
 from oidc_auth.settings import oidc_settings
@@ -44,7 +43,7 @@ class TestOpenIDPRovider(OIDCTestCase):
 
         found_provider = OpenIDProvider.discover(issuer='http://example.it')
 
-        tools.assert_equal(found_provider.id, existing_provider.id)
+        self.assertEqual(found_provider.id, existing_provider.id)
 
     @mock.patch('oidc_auth.models.OpenIDProvider')
     def test_get_default_provider__create(self, ProviderMock):

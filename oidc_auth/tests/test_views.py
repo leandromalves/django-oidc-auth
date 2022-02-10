@@ -3,7 +3,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from importlib import import_module
 from django.test import Client
-from nose import tools
 import mock
 
 from .utils import OIDCTestCase
@@ -25,8 +24,8 @@ class TestAuthorizationPhase(OIDCTestCase):
         with oidc_settings.override(DEFAULT_PROVIDER={}):
             response = self.client.get('/oidc/login/')
 
-        tools.assert_equal(response.status_code, 200)
-        tools.assert_true(any(t.name == 'oidc/login.html' for t in response.templates))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any(t.name == 'oidc/login.html' for t in response.templates))
 
     @mock.patch('requests.get')
     def test_post_login(self, get_mock):
@@ -37,18 +36,18 @@ class TestAuthorizationPhase(OIDCTestCase):
                 'issuer': 'http://example.it'
             })
 
-        tools.assert_equal(response.status_code, 302)
+        self.assertEqual(response.status_code, 302)
 
         redirect_url = urlparse(response['Location'])
-        tools.assert_equal('http://example.it', '%s://%s' % (redirect_url.scheme, redirect_url.hostname))
+        self.assertEqual('http://example.it', '%s://%s' % (redirect_url.scheme, redirect_url.hostname))
 
         params = parse_qs(redirect_url.query)
-        tools.assert_equal(set(params.keys()),
+        self.assertEqual(set(params.keys()),
             {'response_type', 'scope', 'client_id', 'state'})
 
     def test_login_complete_without_oidc_session(self):
         response = self.client.get('/oidc/complete')  # without oidc_state in session *on purpose*
-        tools.assert_equal(response.status_code, 301)
+        self.assertEqual(response.status_code, 301)
 
     @mock.patch('requests.get')
     def test_login_default_provider(self, get_mock):
@@ -60,9 +59,9 @@ class TestAuthorizationPhase(OIDCTestCase):
         with oidc_settings.override(DEFAULT_PROVIDER=configs):
             response = self.client.get('/oidc/login/')
 
-        tools.assert_equal(response.status_code, 302)
+        self.assertEqual(response.status_code, 302)
         redirect_url = urlparse(response['Location'])
-        tools.assert_equal('default.example.it', redirect_url.hostname)
+        self.assertEqual('default.example.it', redirect_url.hostname)
 
 
 class TestTokenExchangePhase(OIDCTestCase):
@@ -80,10 +79,10 @@ class TestTokenExchangePhase(OIDCTestCase):
         session['oidc_state'] = 'foobar'
         session.save()
 
-        tools.assert_equal(400, self.client.post('/oidc/complete/').status_code)
-        tools.assert_equal(400, self.client.post('/oidc/complete/', data={
+        self.assertEqual(400, self.client.post('/oidc/complete/').status_code)
+        self.assertEqual(400, self.client.post('/oidc/complete/', data={
             'code': '12345'}).status_code)
-        tools.assert_equal(400, self.client.post('/oidc/complete/', data={
+        self.assertEqual(400, self.client.post('/oidc/complete/', data={
             'state': '12345'}).status_code)
 
     @mock.patch('requests.post')

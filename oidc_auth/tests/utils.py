@@ -1,6 +1,5 @@
 from urllib.parse import urljoin
 import mock
-from nose import tools
 from django.test import TransactionTestCase
 
 from oidc_auth.models import OpenIDProvider

@@ -1,4 +1,3 @@
-- add Tox to test agains multiple python & django versions
 - shoult it have a dummy views/urls/views file, for testing purposes?
 - setup logger
 - this lib expects only RS256... THIS IS BAD!
