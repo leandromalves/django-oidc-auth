@@ -19,7 +19,7 @@ def read_file(filename):
 
 setup(
     name='django-oidc-auth',
-    version='0.2.4',
+    version='0.2.5',
     url='https://github.com/intelie/django-oidc-auth',
     author='Lucas S. Magalhães',
     author_email='lucas.sampaio@intelie.com.br',
